@@ -1,35 +1,55 @@
 {
-  "packageManager": "pnpm@9.15.5+sha512.845196026aab1cc3f098a0474b64dfbab2afe7a1b4e91dd86895d8e4aa32a7a6d03049e2d0ad770bbe4de023a7122fb68c1a1d6e0d033c7076085f9d5d4800d4",
-  "devDependencies": {
-    "@testing-library/jest-dom": "^6.6.3",
-    "tsup": "^8.4.0",
-    "typescript": "^5.8.2",
-    "vitest": "^3.0.9"
+  "name": "structure-id",
+  "description": "generate ids from object stucture",
+  "version": "1.0.2",
+  "type": "module",
+  "author": "Michael Sweeney <overthemike@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/overthemike/structure-id.git"
+  },
+  "source": "./src/index.ts",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "./package.json": "./package.json",
+    ".": {
+      "require": {
+        "types": "./dist/cjs/index.d.ts",
+        "default": "./dist/cjs/index.js"
+      },
+      "default": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
   },
   "scripts": {
     "test": "vitest run",
     "build": "tsup src/index.ts"
   },
-  "name": "structure-id",
-  "version": "1.0.2",
-  "description": "generate ids from object stucture",
-  "main": "index.js",
+  "files": [
+    "src",
+    "dist"
+  ],
   "directories": {
     "test": "tests"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/overthemike/structure-id.git"
   },
   "keywords": [
     "unique",
     "id",
     "object"
   ],
-  "author": "Michael Sweeney <overthemike@gmail.com>",
   "license": "MIT",
   "bugs": {
     "url": "https://github.com/overthemike/structure-id/issues"
   },
-  "homepage": "https://github.com/overthemike/structure-id#readme"
+  "homepage": "https://github.com/overthemike/structure-id#readme",
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.6.3",
+    "tsup": "^8.4.0",
+    "typescript": "^5.8.2",
+    "vitest": "^3.0.9"
+  },
+  "packageManager": "pnpm@9.15.5+sha512.845196026aab1cc3f098a0474b64dfbab2afe7a1b4e91dd86895d8e4aa32a7a6d03049e2d0ad770bbe4de023a7122fb68c1a1d6e0d033c7076085f9d5d4800d4"
 }
