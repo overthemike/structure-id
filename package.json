@@ -1,7 +1,7 @@
 {
   "name": "structure-id",
   "description": "generate ids from object stucture",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "type": "module",
   "author": "Michael Sweeney <overthemike@gmail.com>",
   "repository": {
