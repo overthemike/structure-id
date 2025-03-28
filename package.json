@@ -8,6 +8,28 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsup"
-  }
+    "build": "tsup src/index.ts"
+  },
+  "name": "structure-id",
+  "version": "1.0.0",
+  "description": "generate ids from object stucture",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/overthemike/structure-id.git"
+  },
+  "keywords": [
+    "unique",
+    "id",
+    "object"
+  ],
+  "author": "Michael Sweeney <overthemike@gmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/overthemike/structure-id/issues"
+  },
+  "homepage": "https://github.com/overthemike/structure-id#readme"
 }
