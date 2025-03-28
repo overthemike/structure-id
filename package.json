@@ -1,7 +1,7 @@
 {
   "name": "structure-id",
   "description": "generate ids from object stucture",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "author": "Michael Sweeney <overthemike@gmail.com>",
   "repository": {
@@ -12,26 +12,31 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {
-  "./package.json": "./package.json",
-  ".": {
-    "require": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.cjs"
-    },
-    "import": {
-      "types": "./dist/index.d.ts",
-      "default": "./dist/index.js"
+    "./package.json": "./package.json",
+    ".": {
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      },
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
     }
-  }
-},
-"tsup": {
-  "entry": ["src/index.ts"],
-  "format": ["cjs", "esm"],
-  "dts": true,
-  "splitting": false,
-  "sourcemap": true,
-  "clean": true
-},
+  },
+  "tsup": {
+    "entry": [
+      "src/index.ts"
+    ],
+    "format": [
+      "cjs",
+      "esm"
+    ],
+    "dts": true,
+    "splitting": false,
+    "sourcemap": true,
+    "clean": true
+  },
   "scripts": {
     "test": "vitest run",
     "build": "tsup src/index.ts"
