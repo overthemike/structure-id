@@ -39,7 +39,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "build": "tsup src/index.ts"
+    "build": "tsup src/index.ts",
+    "prepublishOnly": "npm run build"
   },
   "files": [
     "src",
