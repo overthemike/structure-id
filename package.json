@@ -11,7 +11,7 @@
     "build": "tsup src/index.ts"
   },
   "name": "structure-id",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "generate ids from object stucture",
   "main": "index.js",
   "directories": {
