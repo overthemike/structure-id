@@ -23,6 +23,16 @@ describe('Structure ID Generator', () => {
       expect(id1).not.toBe(id2)
     })
 
+    test('should generate the same IDs for objects with the same properties but in a different order', () => {
+      const obj1 = { count: 0, name: 'test' }
+      const obj2 = { name: 'test', count: 0 }
+
+      const id1 = generateStructureId(obj1)
+      const id2 = generateStructureId(obj2)
+
+      expect(id1).toBe(id2)
+    })
+
     test('should generate different IDs for objects with different property types', () => {
       const obj1 = { count: 0, name: 'test' }
       const obj2 = { count: '0', name: 'test' } // count is string instead of number
