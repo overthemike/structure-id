@@ -61,6 +61,7 @@
   "homepage": "https://github.com/overthemike/structure-id#readme",
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
+    "@types/node": "^22.13.14",
     "tsup": "^8.4.0",
     "typescript": "^5.8.2",
     "vitest": "^3.0.9"
