@@ -188,5 +188,7 @@ export function getStructureInfo(obj: Record<string, unknown>): {
  */
 export function resetState(): void {
 	GLOBAL_KEY_MAP.clear();
+
+	// we need to start at 512 here because 0-256 holds the native js types
 	nextBit = 512n;
 }
