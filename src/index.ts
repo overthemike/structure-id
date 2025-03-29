@@ -23,11 +23,11 @@ const GLOBAL_KEY_MAP = new Map<string, bigint>();
 let nextBit = 512n;
 
 // Function to get the next bit value
-function getNextBit(): bigint {
+const getNextBit = (): bigint => {
 	const bit = nextBit;
 	nextBit <<= 1n;
 	return bit;
-}
+};
 
 // Type checks
 const isObject = (x: unknown): x is object =>
@@ -36,17 +36,17 @@ const isObject = (x: unknown): x is object =>
 /**
  * Get or create a bit for a key (using the global map)
  */
-function getBit(key: string): bigint {
+const getBit = (key: string): bigint => {
 	if (!GLOBAL_KEY_MAP.has(key)) {
 		GLOBAL_KEY_MAP.set(key, getNextBit());
 	}
 	return GLOBAL_KEY_MAP.get(key) as bigint;
-}
+};
 
 /**
  * Generate a structure ID for an object
  */
-export function generateStructureId(obj: Record<string, unknown>): string {
+export const generateStructureId = (obj: Record<string, unknown>): string => {
 	// Maps to track object instances (for circular references)
 	const objectMap = new Map<object, string>();
 
@@ -165,7 +165,7 @@ export function generateStructureId(obj: Record<string, unknown>): string {
 		.map(([level, hash]) => `L${level}:${hash}`);
 
 	return idParts.join("-");
-}
+};
 
 /**
  * Get the structure info for debugging/exploration
