@@ -88,6 +88,110 @@ Resets the internal state of the library, clearing all cached property mappings.
 
 **Note**: You typically don't need to call this unless you want to start fresh with property-to-bit mappings.
 
+## When to use `structure-id`
+
+The `structure-id` library shines in scenarios where you need to identify and match objects based on their structure rather than explicit keys or instance identity. Here are some ideal use cases:
+
+### State Management Without Explicit Keys
+
+When persisting and rehydrating application state, you often need a way to match stored state with the corresponding objects in your application. Instead of manually maintaining string keys for every object, `structure-id` automatically generates consistent identifiers based on object structure.
+
+```ts
+// Instead of this:
+const componentKey = "user-preferences-panel";
+storeState(componentKey, preferences);
+// Later:
+const savedState = getState(componentKey);
+
+// You can do this:
+const structureId = generateStructureId(preferences);
+storeState(structureId, preferences);
+// Later:
+const savedState = getState(generateStructureId(preferences));
+```
+
+### Memoization and Caching
+
+When implementing memoization patterns, you can use structure-based IDs to cache results based on input structure rather than identity:
+
+```ts
+const memoizedResults = new Map<string, any>();
+
+function expensiveCalculation(data: SomeComplexObject) {
+  const structureId = generateStructureId(data);
+  
+  if (memoizedResults.has(structureId)) {
+    return memoizedResults.get(structureId);
+  }
+  
+  const result = /* complex calculation */;
+  memoizedResults.set(structureId, result);
+  return result;
+}
+```
+
+### Normalizing Data for Storage
+
+When storing objects in databases or state management systems, you can use structural IDs to create consistent references:
+
+```ts
+function normalizeForStorage(entities: Record<string, unknown>[]) {
+  const normalizedEntities: Record<string, any> = {};
+  
+  for (const entity of entities) {
+    const id = generateStructureId(entity);
+    normalizedEntities[id] = entity;
+  }
+  
+  return normalizedEntities;
+}
+```
+
+### Change detection
+
+Detect changes in object structure without relying on reference equality:
+
+```ts
+function hasStructuralChanges(oldObj: object, newObj: object): boolean {
+  return generateStructureId(oldObj) !== generateStructureId(newObj);
+}
+```
+
+### Object Deduplication
+
+Efficiently identify and remove duplicate objects with identical structures:
+
+```ts
+function deduplicateByStructure<T>(objects: T[]): T[] {
+  const uniqueStructures = new Map<string, T>();
+  
+  for (const obj of objects) {
+    const id = generateStructureId(obj as Record<string, unknown>);
+    if (!uniqueStructures.has(id)) {
+      uniqueStructures.set(id, obj);
+    }
+  }
+  
+  return Array.from(uniqueStructures.values());
+}
+```
+
+### When not to use
+
+While `structure-id` is powerful, it's not suitable for every scenario:
+
+- When you need to identify objects based on their content/values rather than structure
+- For very large objects where performance is critical (the deep traversal has some overhead)
+- When you specifically need to track object identity (same instance) rather than structure
+
+### Benefits Over Manual Key Management
+
+- Automatic: No need to manually specify and maintain string keys
+- Consistent: Same structure always generates the same ID
+- Structural: Changes to object structure are automatically reflected in the ID
+- Safe: Handles circular references without issues
+- Deterministic: Property order doesn't affect the generated ID
+
 ## How It Works
 
 The library uses a bit-wise approach to generate structure IDs:
