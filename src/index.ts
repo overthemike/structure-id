@@ -19,6 +19,9 @@ const TYPE_BITS: Record<string, bigint> = {
 // Global key map for persistent property-to-bit mapping
 const GLOBAL_KEY_MAP = new Map<string, bigint>()
 
+// Cache to track structure hashes and their collision counts
+const STRUCTURE_HASH_COUNTER = new Map<string, number>()
+
 // Global counters for consistent IDs
 let nextBit = 512n
 
@@ -43,10 +46,43 @@ const getBit = (key: string): bigint => {
 	return GLOBAL_KEY_MAP.get(key) as bigint
 }
 
+// Configuration type for ID generation
+export interface StructureIdConfig {
+	/**
+	 * When true, generates a new unique ID if the same structure is encountered again
+	 */
+	newIdOnCollision?: boolean
+}
+
+// Global configuration
+let globalConfig: StructureIdConfig = {
+	newIdOnCollision: false,
+}
+
+/**
+ * Set global configuration for structure ID generation
+ */
+export function setStructureIdConfig(config: StructureIdConfig): void {
+	globalConfig = { ...config }
+}
+
+/**
+ * Get the current global configuration
+ */
+export function getStructureIdConfig(): StructureIdConfig {
+	return { ...globalConfig }
+}
+
 /**
  * Generate a structure ID for an object
  */
-export const generateStructureId = (obj: Record<string, unknown>): string => {
+export const generateStructureId = (
+	obj: Record<string, unknown>,
+	config?: StructureIdConfig,
+): string => {
+	// Use provided config or fall back to global config
+	const effectiveConfig = config || globalConfig
+
 	// Maps to track object instances (for circular references)
 	const objectMap = new Map<object, string>()
 
@@ -159,7 +195,36 @@ export const generateStructureId = (obj: Record<string, unknown>): string => {
 	// Process the root object
 	processStructure(obj)
 
-	// Convert level hashes to structure ID
+	// Generate a structure signature for collision detection
+	// This includes all levels except L0
+	const structureLevels = Object.entries(levelHashes)
+		.filter(([level]) => Number(level) > 0)
+		.sort(([a], [b]) => Number(a) - Number(b))
+		.map(([level, hash]) => `L${level}:${hash}`)
+
+	const structureSignature = structureLevels.join("-")
+
+	// Handle collisions if configured
+	if (effectiveConfig?.newIdOnCollision) {
+		let collisionCount = 0
+
+		// Check if we've seen this structure before
+		if (STRUCTURE_HASH_COUNTER.has(structureSignature)) {
+			// Get the current count and increment it
+			const currentCount = STRUCTURE_HASH_COUNTER.get(structureSignature)
+			collisionCount = currentCount !== undefined ? currentCount + 1 : 0
+			STRUCTURE_HASH_COUNTER.set(structureSignature, collisionCount)
+		} else {
+			// First time seeing this structure
+			STRUCTURE_HASH_COUNTER.set(structureSignature, 0)
+		}
+
+		// Set L0 to the collision count (starts at 0 for first occurrence)
+		const l0Hash = BigInt(collisionCount)
+		levelHashes[0] = l0Hash
+	}
+
+	// Convert all level hashes to the final structure ID
 	const idParts = Object.entries(levelHashes)
 		.sort(([a], [b]) => Number(a) - Number(b))
 		.map(([level, hash]) => `L${level}:${hash}`)
@@ -168,26 +233,60 @@ export const generateStructureId = (obj: Record<string, unknown>): string => {
 }
 
 /**
- * Get the structure info for debugging/exploration
+ * Get the structure info for an object without incrementing the collision counter
  */
-export function getStructureInfo(obj: Record<string, unknown>): {
+export function getStructureInfo(
+	obj: Record<string, unknown>,
+	config?: StructureIdConfig,
+): {
 	id: string
 	levels: number
+	collisionCount: number
 } {
-	const id = generateStructureId(obj)
-	const levels = id.split("-").length
+	// Use provided config or fall back to global config
+	const effectiveConfig = config || globalConfig
 
+	// First, generate the ID without collision handling to get the base structure
+	const noCollisionConfig = { newIdOnCollision: false }
+	const baseId = generateStructureId(obj, noCollisionConfig)
+	const levels = baseId.split("-").length
+
+	// Get the structure signature (everything except L0) for collision lookup
+	const structureSignature = baseId.split("-").slice(1).join("-")
+
+	// Check current collision count without incrementing
+	const collisionCount = STRUCTURE_HASH_COUNTER.has(structureSignature)
+		? STRUCTURE_HASH_COUNTER.get(structureSignature) || 0
+		: 0
+
+	// If collision handling is enabled, show what the ID would be with the current count
+	if (effectiveConfig.newIdOnCollision) {
+		// Construct ID with the current count
+		const l0Part = `L0:${collisionCount}`
+		const id = [l0Part, structureSignature].join("-")
+
+		return {
+			id,
+			levels,
+			collisionCount,
+		}
+	}
+
+	// For no collision handling, just return the base ID
 	return {
-		id,
+		id: baseId,
 		levels,
+		collisionCount,
 	}
 }
 
 /**
- * Reset state for testing
+ * Reset internal state for generating new IDs
+ * This does NOT reset the global configuration
  */
 export function resetState(): void {
 	GLOBAL_KEY_MAP.clear()
+	STRUCTURE_HASH_COUNTER.clear()
 
 	// we need to start at 512 here because 0-256 holds the native js types
 	nextBit = 512n
