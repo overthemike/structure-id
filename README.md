@@ -1,3 +1,11 @@
+![NPM Version](https://img.shields.io/npm/v/structure-id?style=flat-square&color=%23e8b339)
+![GitHub Actions Workflow Status](https://img.shields.io/github/actions/workflow/status/overthemike/structure-id/test.yml?style=flat-square&color=%23e8b339)
+![npm bundle size](https://img.shields.io/bundlephobia/minzip/structure-id?style=flat-square&color=%23e8b339)
+![NPM License](https://img.shields.io/npm/l/structure-id?style=flat-square&color=%23e8b339)
+
+<!-- ![NPM Downloads](https://img.shields.io/npm/d18m/structure-id?style=flat-square&color=%23e8b339)
+ -->
+
 # structure-id
 
 A lightweight, robust library for generating unique identifiers for JavaScript/TypeScript objects based on their structure rather than requiring explicit string keys.

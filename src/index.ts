@@ -344,9 +344,8 @@ export function getStructureInfo(
 	}
 
 	// Get the current collision count for this structure without incrementing
-	const collisionCount = STRUCTURE_HASH_COUNTER.has(structureSignature)
-		? STRUCTURE_HASH_COUNTER.get(structureSignature) || 0
-		: 0
+	// Get the current collision count for this structure without incrementing or adding entries
+	const collisionCount = STRUCTURE_HASH_COUNTER.get(structureSignature) || 0
 
 	// Determine the ID to return based on collision handling setting
 	let id: string

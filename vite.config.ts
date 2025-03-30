@@ -6,5 +6,10 @@ export default defineConfig({
 			include: ["./bench/**"], // Adjust if needed
 			reporters: ["verbose"],
 		},
+		coverage: {
+			provider: "v8",
+			reporter: ["text", "json", "html"],
+			enabled: true,
+		},
 	},
 })
