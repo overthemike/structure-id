@@ -40,7 +40,8 @@
   "scripts": {
     "test": "vitest run",
     "build": "tsup src/index.ts",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "bench": "vitest bench"
   },
   "files": [
     "src",
@@ -61,9 +62,11 @@
   "homepage": "https://github.com/overthemike/structure-id#readme",
   "devDependencies": {
     "@testing-library/jest-dom": "^6.6.3",
+    "@types/benchmark": "^2.1.5",
     "@types/node": "^22.13.14",
     "tsup": "^8.4.0",
     "typescript": "^5.8.2",
+    "vite": "^6.2.3",
     "vitest": "^3.0.9"
   },
   "packageManager": "pnpm@9.15.5+sha512.845196026aab1cc3f098a0474b64dfbab2afe7a1b4e91dd86895d8e4aa32a7a6d03049e2d0ad770bbe4de023a7122fb68c1a1d6e0d033c7076085f9d5d4800d4"

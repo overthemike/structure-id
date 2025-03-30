@@ -1,6 +1,6 @@
-import { murmurHash3 } from "./hash"
+import { hash } from "./hash"
 
-const compact = (str: string) => murmurHash3(str)
+const compact = (str: string) => hash(str)
 /**
  * Structure-ID: Generate unique IDs based on object structure
  */
