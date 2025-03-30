@@ -1,6 +1,6 @@
 import { hash } from "./hash"
 
-const compact = (str: string) => hash(str)
+const compact = (str: string): string => hash(str)
 /**
  * Structure-ID: Generate unique IDs based on object structure
  */

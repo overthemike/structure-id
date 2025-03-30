@@ -10,7 +10,7 @@ type HashFunctionProps = {
 	custom?: (str: string) => string
 }
 
-export const hash = (str: string, options?: HashFunctionProps) => {
+export const hash = (str: string, options?: HashFunctionProps): string => {
 	if (options) {
 		if (options.custom !== undefined && typeof options.custom === "function") {
 			return options.custom(str)
@@ -98,7 +98,7 @@ let encoder: TextEncoder | undefined
  * @param input - byte array or string
  * @param seed - optional seed (32-bit unsigned);
  */
-export function xxHash32(input: Uint8Array | string, seed = 0): number {
+export function xxHash32(input: Uint8Array | string, seed = 0): string {
 	const buffer =
 		typeof input === "string"
 			? // biome-ignore lint/suspicious/noAssignInExpressions: <explanation>
@@ -276,5 +276,5 @@ export function xxHash32(input: Uint8Array | string, seed = 0): number {
 	acc = acc ^ (acc >>> 16)
 
 	// turn any negatives back into a positive number;
-	return acc < 0 ? acc + 4294967296 : acc
+	return acc < 0 ? (acc + 4294967296).toString(16) : acc.toString(16)
 }
