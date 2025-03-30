@@ -94,7 +94,7 @@ describe("Structure Info Tests", () => {
 		generateStructureId(obj2) // This will make the counter for this structure = 1
 
 		// Get info for the second object - should now show count of 1
-		const info2 = getStructureInfo(obj1)
+		const info2 = getStructureInfo(obj2)
 
 		// With collision handling on and after generating an ID, counter should be 1
 		expect(info2.collisionCount).toBe(1)
