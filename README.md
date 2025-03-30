@@ -64,29 +64,88 @@ console.log(id === id3); // false (because the structure is different)
 
 ## API Reference
 
-### `generateStructureId(obj: Record<string, any>): string`
+### `generateStructureId(obj: Record<string, any>, config?: StructureIdConfig): string`
 
 Generates a unique ID string based on the structure of the provided object.
 
 - **Parameters**:
   - `obj`: The object to generate an ID for.
+  - `config` (optional): Configuration options for ID generation.
 - **Returns**: A string representing the structure ID.
 
-### `getStructureInfo(obj: Record<string, any>): { id: string; levels: number; }`
+### `getStructureInfo(obj: Record<string, any>, config?: StructureIdConfig): { id: string; levels: number; collisionCount: number; }`
 
 Provides additional information about the object's structure.
 
 - **Parameters**:
   - `obj`: The object to analyze.
+  - `config` (optional): Configuration options for ID generation.
 - **Returns**: An object containing:
   - `id`: The structure ID.
   - `levels`: The number of nesting levels in the object.
+  - `collisionCount`: The number of times this structure has been encountered.
+
+### `setStructureIdConfig(config: StructureIdConfig): void`
+
+Sets global configuration options for structure ID generation.
+
+- **Parameters**:
+  - `config`: The configuration object.
+
+### `getStructureIdConfig(): StructureIdConfig`
+
+Gets the current global configuration.
+
+- **Returns**: A copy of the current global configuration object.
 
 ### `resetState(): void`
 
 Resets the internal state of the library, clearing all cached property mappings.
 
 **Note**: You typically don't need to call this unless you want to start fresh with property-to-bit mappings.
+
+### Configuration Options
+
+The `StructureIdConfig` object supports the following options:
+
+```typescript
+interface StructureIdConfig {
+  newIdOnCollision?: boolean;
+}
+```
+
+#### `newIdOnCollision` (default: `false`)
+
+When set to `true`, each object with the same structure will receive a unique ID. This is useful when you need to distinguish between different object instances that share the same structure.
+
+```typescript
+// Generate a unique ID for each object, even with the same structure
+const config = { newIdOnCollision: true };
+
+const obj1 = { name: "John", age: 30 };
+const obj2 = { name: "Alice", age: 25 };
+
+const id1 = generateStructureId(obj1, config);
+const id2 = generateStructureId(obj2, config);
+
+console.log(id1); // "L0:0-L1:5"
+console.log(id2); // "L0:1-L1:5"
+console.log(id1 === id2); // false (even though structure is identical)
+```
+
+You can set this option globally or per call:
+
+```typescript
+// Set globally
+setStructureIdConfig({ newIdOnCollision: true });
+
+// Will use global config
+const id1 = generateStructureId(obj1);
+const id2 = generateStructureId(obj2);
+
+// Override for a specific call
+const id3 = generateStructureId(obj3, { newIdOnCollision: false });
+```
 
 ## When to use `structure-id`
 
@@ -173,6 +232,24 @@ function deduplicateByStructure<T>(objects: T[]): T[] {
   }
   
   return Array.from(uniqueStructures.values());
+}
+```
+
+### Unique Per-Instance IDs
+
+When you need to uniquely identify each object instance, even if they share the same structure, you can use the `newIdOnCollision` option:
+
+```ts
+function assignUniqueIds<T>(objects: T[]): Map<T, string> {
+  const idMap = new Map<T, string>();
+  const config = { newIdOnCollision: true };
+  
+  for (const obj of objects) {
+    const id = generateStructureId(obj as Record<string, unknown>, config);
+    idMap.set(obj, id);
+  }
+  
+  return idMap;
 }
 ```
 
