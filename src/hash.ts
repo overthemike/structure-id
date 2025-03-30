@@ -1,20 +1,3 @@
-export function fnv1a(str: string): string {
-	let hash = 2166136261 // FNV offset basis
-	for (let i = 0; i < str.length; i++) {
-		hash ^= str.charCodeAt(i)
-		hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24)
-	}
-	return (hash >>> 0).toString(16) // Convert to unsigned 32-bit and then to hex
-}
-
-export function djb2(str: string): string {
-	let hash = 5381
-	for (let i = 0; i < str.length; i++) {
-		hash = (hash << 5) + hash + str.charCodeAt(i) // hash * 33 + c
-	}
-	return (hash >>> 0).toString(16)
-}
-
 export function murmurHash3(str: string): string {
 	const seed = 0
 	const c1 = 0xcc9e2d51
