@@ -1,3 +1,6 @@
+import { fnv1a } from "./hash"
+
+const compact = (str: string) => fnv1a(str)
 /**
  * Structure-ID: Generate unique IDs based on object structure
  */
@@ -262,7 +265,7 @@ export const generateStructureId = (
 		.sort(([a], [b]) => Number(a) - Number(b))
 		.map(([level, hash]) => `L${level}:${hash}`)
 
-	const finalId = idParts.join("-")
+	const finalId = compact(idParts.join("-"))
 
 	// Cache the generated ID for this exact object reference (only for non-collision cases)
 	// For collision handling, we need to generate unique IDs each time
@@ -310,10 +313,11 @@ export function getStructureInfo(
 
 	// Type check for primitives
 	if (typeof obj !== "object" || obj === null) {
-		const id = generateStructureId(obj, { newIdOnCollision: false })
+		const fullId = generateStructureId(obj, { newIdOnCollision: false })
+		const id = compact(fullId)
 		return {
 			id,
-			levels: calculateIdLevels(id),
+			levels: calculateIdLevels(fullId),
 			collisionCount: 0,
 		}
 	}
@@ -350,7 +354,8 @@ export function getStructureInfo(
 	if (effectiveConfig.newIdOnCollision) {
 		// Create ID with the current collision count
 		const l0Part = `L0:${collisionCount}`
-		id = [l0Part, structureSignature].join("-")
+		const fullId = [l0Part, structureSignature].join("-")
+		id = compact(fullId)
 	} else {
 		// For no collision handling, check if we have a cached ID
 		if (OBJECT_ID_CACHE.has(obj)) {
