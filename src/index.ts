@@ -96,7 +96,7 @@ export function getStructureIdConfig(): StructureIdConfig {
  * Generate a structure ID for an object
  */
 export const generateStructureId = (
-	obj: Record<string, unknown>,
+	obj: unknown,
 	config?: StructureIdConfig,
 ): string => {
 	// Use provided config or fall back to global config
