@@ -4,6 +4,7 @@ import {
 	getCompactInfo,
 	resetState,
 	setStructureIdConfig,
+	getStructureInfo,
 	generateStructureId,
 } from "../src"
 

@@ -1,5 +1,13 @@
 import { describe, test, expect, beforeEach } from "vitest"
-import { generateStructureId, getStructureInfo, resetState } from "../src/index"
+import {
+	generateStructureId,
+	getStructureInfo,
+	resetState,
+	setStructureIdConfig,
+	OBJECT_SIGNATURE_CACHE,
+	STRUCTURE_INFO_CACHE,
+	OBJECT_ID_CACHE,
+} from "../src/index"
 
 describe("API Functions", () => {
 	describe("getStructureInfo", () => {
@@ -152,6 +160,31 @@ describe("API Functions", () => {
 
 			// Should be the same as the first ID because they have the same structure
 			expect(id1).toBe(id3)
+		})
+	})
+
+	describe("Edge Coverage Cases", () => {
+		beforeEach(() => {
+			resetState()
+		})
+
+		test("should calculate structure signature for uncached objects", () => {
+			// Reset state completely
+			resetState()
+
+			// Create an object with a property that won't be enumerated
+			const uncachedObj = {}
+			Object.defineProperty(uncachedObj, "hidden", {
+				value: Math.random(),
+				enumerable: false,
+			})
+
+			// Make sure it's not in any caches first
+			expect(OBJECT_SIGNATURE_CACHE.has(uncachedObj)).toBe(false)
+
+			// Now call getStructureInfo directly
+			const info = getStructureInfo(uncachedObj as any)
+			expect(info).toHaveProperty("id")
 		})
 	})
 })

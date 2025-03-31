@@ -20,19 +20,19 @@ const TYPE_BITS: Record<string, bigint> = {
 }
 
 // Global key map for persistent property-to-bit mapping
-const GLOBAL_KEY_MAP = new Map<string, bigint>()
+export const GLOBAL_KEY_MAP = new Map<string, bigint>()
 
 // Cache to track structure hashes and their collision counts
-const STRUCTURE_HASH_COUNTER = new Map<string, number>()
+export const STRUCTURE_HASH_COUNTER = new Map<string, number>()
 
 // Cache for object reference to structure ID mapping (memoization)
-let OBJECT_ID_CACHE = new WeakMap<object, string>()
+export let OBJECT_ID_CACHE = new WeakMap<object, string>()
 
 // Cache for structure signature mapping (to detect identical structures)
-let OBJECT_SIGNATURE_CACHE = new WeakMap<object, string>()
+export let OBJECT_SIGNATURE_CACHE = new WeakMap<object, string>()
 
 // Cache for structure info results
-let STRUCTURE_INFO_CACHE = new WeakMap<
+export let STRUCTURE_INFO_CACHE = new WeakMap<
 	object,
 	{
 		id: string
@@ -331,17 +331,12 @@ export function getStructureInfo(
 	}
 
 	// Get or calculate the structure signature for this object
-	let structureSignature: string
-
-	if (OBJECT_SIGNATURE_CACHE.has(obj)) {
-		// We already have the signature cached
-		structureSignature = OBJECT_SIGNATURE_CACHE.get(obj) as string
-	} else {
-		// Calculate the base ID to get the structure signature
-		const noCollisionConfig = { newIdOnCollision: false }
-		const baseId = generateStructureId(obj, noCollisionConfig)
-		structureSignature = baseId.split("-").slice(1).join("-")
-	}
+	const structureSignature = OBJECT_SIGNATURE_CACHE.has(obj)
+		? (OBJECT_SIGNATURE_CACHE.get(obj) as string)
+		: generateStructureId(obj, { newIdOnCollision: false })
+				.split("-")
+				.slice(1)
+				.join("-")
 
 	// Get the current collision count for this structure without incrementing
 	// Get the current collision count for this structure without incrementing or adding entries
@@ -354,13 +349,10 @@ export function getStructureInfo(
 		const l0Part = `L0:${collisionCount}`
 		id = [l0Part, structureSignature].join("-")
 	} else {
-		// For no collision handling, check if we have a cached ID
-		if (OBJECT_ID_CACHE.has(obj)) {
-			id = OBJECT_ID_CACHE.get(obj) as string
-		} else {
-			// Otherwise generate a new one
-			id = generateStructureId(obj, { newIdOnCollision: false })
-		}
+		// For no collision handling, use cached ID or generate directly
+		id = OBJECT_ID_CACHE.has(obj)
+			? (OBJECT_ID_CACHE.get(obj) as string)
+			: generateStructureId(obj, { newIdOnCollision: false })
 	}
 
 	// Calculate levels from the ID
