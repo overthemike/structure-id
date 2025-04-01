@@ -85,6 +85,18 @@ export function murmurHash3(str: string): string {
 	return (hash >>> 0).toString(16)
 }
 
+/**
+ * xxHash32 - An extremely fast non-cryptographic hash algorithm
+ *
+ * This is a rewritten/refactored implementation based on Jason Dent's TypeScript version:
+ * https://github.com/Jason3S/xxhash/blob/main/src/xxHash32.ts
+ *
+ * Original algorithm by Yann Collet: https://github.com/Cyan4973/xxHash
+ *
+ * Jason Dent's implementation is MIT licensed.
+ * Yann Collet's xxHash is BSD-2 licensed.
+ */
+
 const PRIME32_1 = 2654435761
 const PRIME32_2 = 2246822519
 const PRIME32_3 = 3266489917

@@ -301,7 +301,7 @@ function calculateIdLevels(id: string): number {
  * Get the structure info for an object without incrementing the collision counter
  */
 export function getStructureInfo(
-	obj: Record<string, unknown>,
+	obj: unknown,
 	config?: StructureIdConfig,
 ): {
 	id: string
@@ -396,7 +396,7 @@ export function resetState(): void {
 }
 
 export const getCompactId = (
-	obj: Record<string, unknown>,
+	obj: unknown,
 	config?: StructureIdConfig,
 ): string => {
 	// Use the existing function
@@ -407,7 +407,7 @@ export const getCompactId = (
 }
 
 export const getCompactInfo = (
-	obj: Record<string, unknown>,
+	obj: unknown,
 	config?: StructureIdConfig,
 ): {
 	id: string
