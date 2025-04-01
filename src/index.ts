@@ -41,6 +41,9 @@ export let STRUCTURE_INFO_CACHE = new WeakMap<
 	}
 >()
 
+// Seed for L0 hash - changes on each reset to ensure different IDs after reset
+export let RESET_SEED = 0
+
 // Global counters for consistent IDs
 let nextBit = 512n
 
@@ -105,7 +108,7 @@ export const generateStructureId = (
 	// Type check for primitives - WeakMap requires object keys
 	if (typeof obj !== "object" || obj === null) {
 		// Handle primitives with a fallback implementation
-		return `L0:0-L1:${TYPE_BITS[typeof obj] || 0n}`
+		return `L0:${TYPE_BITS[typeof obj] || 0n}-L1:${TYPE_BITS[typeof obj] || 0n}`
 	}
 
 	// Quick optimization: Check if we've already calculated an ID for this exact object reference
@@ -240,24 +243,40 @@ export const generateStructureId = (
 		OBJECT_SIGNATURE_CACHE.set(obj, structureSignature)
 	}
 
-	// Handle collisions if configured
+	// Always set L0 to include structure-specific information to ensure different structures get different IDs
+	// We'll include a bit derived from structureSignature in the L0 value to distinguish different structures
+	const signatureHash =
+		BigInt(
+			Array.from(structureSignature).reduce(
+				(acc, char) => acc + char.charCodeAt(0),
+				0,
+			),
+		) << 32n // Shift left to make room for the counter in the lower bits
+
+	// Get the current count from the counter map (or 0 if not seen before)
+	const currentCount = STRUCTURE_HASH_COUNTER.get(structureSignature) ?? 0
+
+	// For L0 value, use either:
+	// 1. Just the counter value if collision handling is enabled (to ensure different IDs)
+	// 2. The signature hash combined with counter if collision handling is disabled (for structure-specific differentiation)
+	let l0Hash: bigint
+
 	if (effectiveConfig?.newIdOnCollision) {
-		let collisionCount = 0
+		// When collision handling is enabled, use only the counter for the L0 value
+		// to ensure each instance gets a unique ID
+		l0Hash = BigInt(currentCount)
+	} else {
+		// When collision handling is disabled, use the signature hash combined with counter and RESET_SEED
+		// This ensures different structures get different IDs while similar structures get the same ID
+		// The RESET_SEED ensures IDs change after resetState() is called
+		l0Hash = signatureHash | BigInt(currentCount) | BigInt(RESET_SEED)
+	}
 
-		// Check if we've seen this structure before
-		if (STRUCTURE_HASH_COUNTER.has(structureSignature)) {
-			// Get the current count and increment it
-			const currentCount = STRUCTURE_HASH_COUNTER.get(structureSignature)
-			collisionCount = currentCount !== undefined ? currentCount + 1 : 0
-			STRUCTURE_HASH_COUNTER.set(structureSignature, collisionCount)
-		} else {
-			// First time seeing this structure
-			STRUCTURE_HASH_COUNTER.set(structureSignature, 0)
-		}
+	levelHashes[0] = l0Hash
 
-		// Set L0 to the collision count (starts at 0 for first occurrence)
-		const l0Hash = BigInt(collisionCount)
-		levelHashes[0] = l0Hash
+	// Only increment the counter if collision handling is enabled
+	if (effectiveConfig?.newIdOnCollision) {
+		STRUCTURE_HASH_COUNTER.set(structureSignature, currentCount + 1)
 	}
 
 	// Convert all level hashes to the final structure ID
@@ -295,6 +314,73 @@ export const generateStructureId = (
 function calculateIdLevels(id: string): number {
 	// Count the number of level indicators (L0, L1, etc.)
 	return id.split("-").length
+}
+
+/**
+ * Get the structure signature for an object without generating an ID or updating counters
+ * This is the key functionality needed for pre-registering structures
+ */
+export function getStructureSignature(obj: unknown): string {
+	if (typeof obj !== "object" || obj === null) {
+		// For primitives, fall back to a simple signature
+		return `type:${typeof obj}`
+	}
+
+	// If we've already calculated a signature for this object, return it
+	if (OBJECT_SIGNATURE_CACHE.has(obj)) {
+		return OBJECT_SIGNATURE_CACHE.get(obj) as string
+	}
+
+	// Otherwise, generate the structure ID without collision handling
+	// and extract the signature (everything after the L0 part)
+	const tempId = generateStructureId(obj, { newIdOnCollision: false })
+	const signature = tempId.split("-").slice(1).join("-")
+
+	// Store this signature for the object
+	OBJECT_SIGNATURE_CACHE.set(obj, signature)
+
+	return signature
+}
+
+/**
+ * Pre-register a structure to set its collision counter
+ * This allows you to ensure the next ID generated for this structure
+ * will start at the specified count
+ */
+export function registerStructure(obj: unknown, collisionCount: number): void {
+	const signature = getStructureSignature(obj)
+	STRUCTURE_HASH_COUNTER.set(signature, collisionCount)
+}
+
+/**
+ * Register multiple structures at once with their collision counts
+ */
+export function registerStructures(
+	registrations: Array<{
+		structure: unknown
+		count: number
+	}>,
+): void {
+	for (const { structure, count } of registrations) {
+		registerStructure(structure, count)
+	}
+}
+
+/**
+ * Register known structure signatures with their collision counts
+ * This is useful when you have the signatures but not the original objects
+ */
+export interface StructureRegistration {
+	signature: string
+	count: number
+}
+
+export function registerStructureSignatures(
+	signatures: Array<StructureRegistration>,
+): void {
+	for (const { signature, count } of signatures) {
+		STRUCTURE_HASH_COUNTER.set(signature, count)
+	}
 }
 
 /**
@@ -339,20 +425,29 @@ export function getStructureInfo(
 				.join("-")
 
 	// Get the current collision count for this structure without incrementing
-	// Get the current collision count for this structure without incrementing or adding entries
+	// Return the counter directly - no adjustments needed
 	const collisionCount = STRUCTURE_HASH_COUNTER.get(structureSignature) || 0
+
+	// Calculate the structure-specific hash part (must match the logic in generateStructureId)
+	const signatureHash =
+		BigInt(
+			Array.from(structureSignature).reduce(
+				(acc, char) => acc + char.charCodeAt(0),
+				0,
+			),
+		) << 32n
 
 	// Determine the ID to return based on collision handling setting
 	let id: string
 	if (effectiveConfig.newIdOnCollision) {
-		// Create ID with the current collision count
-		const l0Part = `L0:${collisionCount}`
+		// When collision handling is enabled, use only the counter for the L0 value
+		// to ensure each instance gets a unique ID
+		const l0Hash = BigInt(collisionCount)
+		const l0Part = `L0:${l0Hash}`
 		id = [l0Part, structureSignature].join("-")
 	} else {
 		// For no collision handling, use cached ID or generate directly
-		id = OBJECT_ID_CACHE.has(obj)
-			? (OBJECT_ID_CACHE.get(obj) as string)
-			: generateStructureId(obj, { newIdOnCollision: false })
+		id = `${OBJECT_ID_CACHE.get(obj)}`
 	}
 
 	// Calculate levels from the ID
@@ -391,8 +486,68 @@ export function resetState(): void {
 		}
 	>()
 
+	// Generate a new random seed to ensure different IDs after reset
+	RESET_SEED = Math.floor(Math.random() * 10000)
+
 	// we need to start at 512 here because 0-256 holds the native js types
 	nextBit = 512n
+}
+
+/**
+ * Export the current structure ID state for persistence
+ */
+export interface StructureState {
+	keyMap: Record<string, string> // key -> bigint as string
+	collisionCounters: Record<string, number> // structure signature -> collision count
+}
+
+export function exportStructureState(): StructureState {
+	// Convert the key map to serializable format (bigint -> string)
+	const keyMap: Record<string, string> = {}
+	for (const [key, value] of GLOBAL_KEY_MAP.entries()) {
+		keyMap[key] = value.toString()
+	}
+
+	// Convert the collision counter to serializable format
+	const collisionCounters: Record<string, number> = {}
+	for (const [signature, count] of STRUCTURE_HASH_COUNTER.entries()) {
+		collisionCounters[signature] = count
+	}
+
+	return {
+		keyMap,
+		collisionCounters,
+	}
+}
+
+/**
+ * Import a previously exported structure ID state
+ */
+export function importStructureState(state: StructureState): void {
+	// Clear existing state first
+	resetState()
+
+	// Restore key map
+	for (const [key, valueStr] of Object.entries(state.keyMap)) {
+		GLOBAL_KEY_MAP.set(key, BigInt(valueStr))
+	}
+
+	// Restore collision counters
+	for (const [signature, count] of Object.entries(state.collisionCounters)) {
+		STRUCTURE_HASH_COUNTER.set(signature, count)
+	}
+
+	// Update the nextBit to be greater than any existing bit
+	let maxBit = 512n
+	for (const bitStr of Object.values(state.keyMap)) {
+		const bit = BigInt(bitStr)
+		if (bit > maxBit) {
+			maxBit = bit
+		}
+	}
+
+	// Set nextBit to the next power of 2
+	nextBit = maxBit << 1n
 }
 
 export const getCompactId = (
