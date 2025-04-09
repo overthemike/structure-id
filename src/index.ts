@@ -102,6 +102,12 @@ export const generateStructureId = (
 	obj: unknown,
 	config?: StructureIdConfig,
 ): string => {
+	const emptyObj = isObject(obj) && Object.keys(obj).length === 0
+	const emptyArr = Array.isArray(obj) && (obj as unknown[]).length === 0
+
+	if (emptyObj) return "{}"
+	if (emptyArr) return "[]"
+
 	// Use provided config or fall back to global config
 	const effectiveConfig = config || globalConfig
 
@@ -191,38 +197,65 @@ export const generateStructureId = (
 			const objTypeBit = getBit(`type:${type}`)
 			levelHashes[level] += objTypeBit
 
-			if (type === "object") {
-				// Process object properties
-				const objValue = value as Record<string, unknown>
+			// Check if this is a root-level (level 0) empty collection
+			const isRootLevel = level === 0
+			const isEmpty =
+				(isObject(value) && Object.keys(value as object).length === 0) ||
+				(Array.isArray(value) && (value as unknown[]).length === 0)
 
-				// Sort keys for consistent ordering
-				const keys = Object.keys(objValue).sort()
+			// Apply the multiplier approach for non-empty collections or non-root empty collections
+			if (!isRootLevel || !isEmpty) {
+				if (type === "object") {
+					// Process object properties
+					const objValue = value as Record<string, unknown>
 
-				// Add keys to level hash
-				for (const key of keys) {
-					const keyBit = getBit(key)
-					levelHashes[level] += keyBit
+					// Sort keys for consistent ordering
+					const keys = Object.keys(objValue).sort()
 
-					// Process property at next level
-					processStructure(objValue[key], level + 1, [...path, key])
-				}
-			} else if (type === "array") {
-				// Process array items
-				const arrayValue = value as unknown[]
+					let multiplier = 1n
+					// Add keys to level hash
+					for (const key of keys) {
+						const propType = getType(objValue[key])
+						const keyBit = getBit(key)
+						levelHashes[level] += keyBit * multiplier
 
-				// Add array length to hash
-				const lengthBit = getBit(`length:${arrayValue.length}`)
-				levelHashes[level] += lengthBit
+						// Add type information with the same multiplier
+						levelHashes[level] += (TYPE_BITS[propType] || 0n) * multiplier
 
-				// Process each item
-				for (let i = 0; i < arrayValue.length; i++) {
-					const indexBit = getBit(`[${i}]`)
-					levelHashes[level] += indexBit
+						// Increment multiplier for next property
+						multiplier++
 
-					// Process array item at next level
-					processStructure(arrayValue[i], level + 1, [...path, `[${i}]`])
+						// Process property at next level
+						processStructure(objValue[key], level + 1, [...path, key])
+					}
+				} else if (type === "array") {
+					// Process array items
+					const arrayValue = value as unknown[]
+
+					// Add array length to hash
+					const lengthBit = getBit(`length:${arrayValue.length}`)
+					levelHashes[level] += lengthBit
+
+					let multiplier = 1n
+					// Process each item
+					for (let i = 0; i < arrayValue.length; i++) {
+						const itemType = getType(arrayValue[i])
+						const indexBit = getBit(`[${i}]`)
+						levelHashes[level] += indexBit * multiplier
+
+						// Add type information with the same multiplier
+						levelHashes[level] += (TYPE_BITS[itemType] || 0n) * multiplier
+
+						// Increment multiplier
+						multiplier++
+
+						// Process array item at next level
+						processStructure(arrayValue[i], level + 1, [...path, `[${i}]`])
+					}
 				}
 			}
+			// For root-level empty collections, we don't need to do any further processing
+			// The type bits added above will ensure they get different IDs
 		}
 	}
 
@@ -243,41 +276,21 @@ export const generateStructureId = (
 		OBJECT_SIGNATURE_CACHE.set(obj, structureSignature)
 	}
 
-	// Always set L0 to include structure-specific information to ensure different structures get different IDs
-	// We'll include a bit derived from structureSignature in the L0 value to distinguish different structures
-	const signatureHash =
-		BigInt(
-			Array.from(structureSignature).reduce(
-				(acc, char) => acc + char.charCodeAt(0),
-				0,
-			),
-		) << 32n // Shift left to make room for the counter in the lower bits
-
 	// Get the current count from the counter map (or 0 if not seen before)
 	const currentCount = STRUCTURE_HASH_COUNTER.get(structureSignature) ?? 0
 
 	// For L0 value, use either:
 	// 1. Just the counter value if collision handling is enabled (to ensure different IDs)
-	// 2. The signature hash combined with counter if collision handling is disabled (for structure-specific differentiation)
-	let l0Hash: bigint
-
+	// 2. The original L0 hash (which contains structure type information) if collision handling is disabled
 	if (effectiveConfig?.newIdOnCollision) {
 		// When collision handling is enabled, use only the counter for the L0 value
 		// to ensure each instance gets a unique ID
-		l0Hash = BigInt(currentCount)
-	} else {
-		// When collision handling is disabled, use the signature hash combined with counter and RESET_SEED
-		// This ensures different structures get different IDs while similar structures get the same ID
-		// The RESET_SEED ensures IDs change after resetState() is called
-		l0Hash = signatureHash | BigInt(currentCount) | BigInt(RESET_SEED)
-	}
+		levelHashes[0] = BigInt(currentCount)
 
-	levelHashes[0] = l0Hash
-
-	// Only increment the counter if collision handling is enabled
-	if (effectiveConfig?.newIdOnCollision) {
+		// Increment the counter
 		STRUCTURE_HASH_COUNTER.set(structureSignature, currentCount + 1)
 	}
+	// Otherwise we keep the L0 hash as is - already properly set in processStructure
 
 	// Convert all level hashes to the final structure ID
 	const idParts = Object.entries(levelHashes)
@@ -428,15 +441,6 @@ export function getStructureInfo(
 	// Return the counter directly - no adjustments needed
 	const collisionCount = STRUCTURE_HASH_COUNTER.get(structureSignature) || 0
 
-	// Calculate the structure-specific hash part (must match the logic in generateStructureId)
-	const signatureHash =
-		BigInt(
-			Array.from(structureSignature).reduce(
-				(acc, char) => acc + char.charCodeAt(0),
-				0,
-			),
-		) << 32n
-
 	// Determine the ID to return based on collision handling setting
 	let id: string
 	if (effectiveConfig.newIdOnCollision) {
@@ -447,7 +451,9 @@ export function getStructureInfo(
 		id = [l0Part, structureSignature].join("-")
 	} else {
 		// For no collision handling, use cached ID or generate directly
-		id = `${OBJECT_ID_CACHE.get(obj)}`
+		id = OBJECT_ID_CACHE.has(obj)
+			? (OBJECT_ID_CACHE.get(obj) as string)
+			: generateStructureId(obj, { newIdOnCollision: false })
 	}
 
 	// Calculate levels from the ID

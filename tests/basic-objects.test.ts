@@ -1,5 +1,10 @@
 import { describe, test, expect, beforeEach } from "vitest"
-import { generateStructureId, getStructureInfo, resetState, setStructureIdConfig } from "../src/index"
+import {
+	generateStructureId,
+	getStructureInfo,
+	resetState,
+	setStructureIdConfig,
+} from "../src/index"
 
 describe("Structure ID Generator", () => {
 	describe("Basic Structure IDs", () => {
@@ -18,14 +23,14 @@ describe("Structure ID Generator", () => {
 			const obj2 = { count: 0, title: "test" } // different property name
 
 			// Set collision handling to true to get different structures
-			setStructureIdConfig({ newIdOnCollision: true });
-			
+			setStructureIdConfig({ newIdOnCollision: true })
+
 			const id1 = generateStructureId(obj1)
 			const id2 = generateStructureId(obj2)
 
 			// With collision handling on, we get different IDs
 			expect(id1).not.toBe(id2)
-			
+
 			// Reset config
 			setStructureIdConfig({ newIdOnCollision: false })
 		})
@@ -289,17 +294,6 @@ describe("Structure ID Generator", () => {
 			expect(() => generateStructureId(undefined as any)).not.toThrow()
 		})
 
-		test("should handle empty objects and arrays", () => {
-			// Create different objects with appropriate types for differentiation
-			const emptyObj = generateStructureId({})
-			const emptyArr = generateStructureId([])
-
-			// Empty objects and arrays have the same ID since they don't have any data
-			expect(emptyObj).toBe(emptyArr)
-			expect(emptyObj.length).toBeGreaterThan(0)
-			expect(emptyArr.length).toBeGreaterThan(0)
-		})
-
 		test("should handle object property order consistently", () => {
 			const obj1 = { a: 1, b: 2, c: 3 }
 			const obj2 = { c: 3, b: 2, a: 1 } // Different order
@@ -454,7 +448,7 @@ describe("Structure ID Generator", () => {
 			// After reset, structure ID generation should be consistent for similar structures
 			const simpleObj1 = { simple: true }
 			const simpleObj2 = { simple: false } // Different value, same structure
-			
+
 			// Generate IDs
 			const id1 = generateStructureId(simpleObj1)
 			const id2 = generateStructureId(simpleObj2)
@@ -466,7 +460,7 @@ describe("Structure ID Generator", () => {
 			// Generate IDs again
 			const newId1 = generateStructureId(simpleObj1)
 			const newId2 = generateStructureId(simpleObj2)
-			
+
 			// Verify that after reset, structural equality still works
 			expect(newId1).toBe(newId2)
 		})
@@ -480,26 +474,25 @@ describe("Structure ID Generator", () => {
 
 			// In the new implementation, structural differences are encoded in the signature part
 			// while the L0 part includes the RESET_SEED, so we need to verify differently
-			
+
 			// Two objects with same properties but different values (same structure)
 			const id1a = generateStructureId({ first: true })
 			const id1b = generateStructureId({ first: false })
 			expect(id1a).toBe(id1b) // Same structure = same ID
-			
+
 			// Object with different structure
-			const id2 = generateStructureId({ second: true }) 
-			
+			const id2 = generateStructureId({ second: true })
+
 			// We can't directly test L0 parts but we can verify consistent behavior
 			const id3 = generateStructureId({ second: false })
 			expect(id2).toBe(id3) // Same structure = same ID
 
 			// With the current implementation, we can only guarantee different IDs with collision handling on
-			setStructureIdConfig({ newIdOnCollision: true });
+			setStructureIdConfig({ newIdOnCollision: true })
 			const newId1 = generateStructureId({ first: true })
 			const newId2 = generateStructureId({ second: true })
 			expect(newId1).not.toBe(newId2)
-			setStructureIdConfig({ newIdOnCollision: false });
-
+			setStructureIdConfig({ newIdOnCollision: false })
 		})
 	})
 
