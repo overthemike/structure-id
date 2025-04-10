@@ -24,9 +24,8 @@ npm install structure-id
 ```
 
 ## Basic Usage
-
 ```typescript
-import { generateStructureId } from 'structure-id';
+import { generateStructureId, getCompactId } from 'structure-id';
 
 // Example object
 const user = {
@@ -36,36 +35,30 @@ const user = {
     theme: 'dark',
     notifications: true
   }
-};
+}
 
-// Generate a unique ID based on the object structure
-const id = generateStructureId(user);
-console.log(id); // "L0:3713-L1:5761-L2:13827"
+// Generate a unique ID based on the object structure and it's properties' types
+const id = generateStructureId(user) // L0:3713-L1:5761-L2:13827
 
-// Same structure = same ID, regardless of values
-const anotherUser = {
-  name: 'Alice',
-  age: 25,
-  preferences: {
-    theme: 'light',
-    notifications: false
-  }
-};
+// Generate a unique ID and then hash that value
+const hashed = getCompactId(user) // cd76ea96
 
-const id2 = generateStructureId(anotherUser);
-console.log(id === id2); // true (because the structure is identical)
+// Get info on what a structure would be without generating
+const {
+  id,         // L0:541598767187353870402585606-L1:1547425049106725343623905933-L2:10
+  levels,     // 3
+  collisions  // 0     ID collisions - same object structure already ran through generator
+} = getStructureInfo(user)
 
-// Different structure = different ID
-const differentStructure = {
-  name: 'Bob',
-  age: 40,
-  settings: { // Different property name
-    theme: 'dark'
-  }
-};
+// Get info for a compact id
+const {
+  id,         // cd76ea96
+  levels,     // 3
+  collisions  // 0     ID collisions - same object structure already ran through generator
+} = getCompactInfo(user)
 
-const id3 = generateStructureId(differentStructure);
-console.log(id === id3); // false (because the structure is different)
+// get all of the data being stored about the state - debugging info
+const allStructureStateData = exportStructureState()
 ```
 
 ## API Reference
